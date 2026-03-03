@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReyzCloud Dashboard</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root { --bg: #0f172a; --sidebar: #1e293b; --accent: #38bdf8; --text: #f8fafc; --danger: #ef4444; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; overflow-x: hidden; }
+        .sidebar { width: 260px; background: var(--sidebar); height: 100vh; position: fixed; left: -260px; transition: 0.3s; z-index: 1000; border-right: 1px solid #334155; }
+        .sidebar.active { left: 0; }
+        .sidebar-header { padding: 25px; font-size: 22px; font-weight: bold; color: var(--accent); border-bottom: 1px solid #334155; }
+        .nav-item { padding: 15px 25px; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: 0.2s; color: #94a3b8; }
+        .nav-item:hover { background: #334155; color: var(--accent); }
+        .nav-item.active { background: #0f172a; border-left: 4px solid var(--accent); color: var(--accent); }
+        .main-content { flex: 1; padding: 20px; width: 100%; transition: 0.3s; }
+        .header-bar { display: flex; align-items: center; gap: 15px; margin-bottom: 30px; }
+        .menu-btn { background: var(--sidebar); border: 1px solid #475569; color: white; padding: 10px; border-radius: 8px; cursor: pointer; }
+        .tab-content { display: none; animation: fadeIn 0.3s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .card { background: var(--sidebar); padding: 25px; border-radius: 12px; border: 1px solid #334155; max-width: 700px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500; color: #94a3b8; }
+        input, select { width: 100%; padding: 12px; margin-bottom: 20px; background: #0f172a; border: 1px solid #475569; color: white; border-radius: 8px; outline: none; }
+        input:focus { border-color: var(--accent); }
+        .action-btn { width: 100%; padding: 14px; background: var(--accent); border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: #0f172a; font-size: 16px; }
+        #output-box { margin-top: 25px; padding: 20px; background: #020617; border-radius: 10px; border-left: 4px solid var(--accent); font-family: 'Fira Code', monospace; white-space: pre-wrap; font-size: 14px; }
+        table { width: 100%; border-collapse: collapse; background: var(--sidebar); border-radius: 10px; overflow: hidden; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #334155; }
+        th { background: #334155; color: var(--accent); font-size: 14px; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 900; backdrop-filter: blur(4px); }
+        .overlay.active { display: block; }
+    </style>
+</head>
+<body>
+    <div class="overlay" id="overlay"></div>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">ReyzCloud Admin</div>
+        <div class="nav-item active" onclick="showTab('create-panel', 'Create Panel')"><i data-lucide="layout-grid"></i> Create Panel</div>
+        <div class="nav-item" onclick="showTab('subdomain', 'Cloudflare DNS')"><i data-lucide="globe"></i> Subdomain</div>
+        <div class="nav-item" onclick="showTab('list-server', 'Server Monitoring')"><i data-lucide="database"></i> List All Server</div>
+        <div class="nav-item" onclick="showTab('danger-zone', 'Delete System')"><i data-lucide="trash-2"></i> Delete System</div>
+        <div class="nav-item" onclick="showTab('admin-manage', 'Admin Management')"><i data-lucide="shield-check"></i> Admin Manage</div>
+    </div>
+
+    <div class="main-content">
+        <div class="header-bar">
+            <button class="menu-btn" id="menuToggle"><i data-lucide="menu"></i></button>
+            <h2 id="current-tab-title">Create Panel</h2>
+        </div>
+
+        <div id="create-panel" class="tab-content active">
+            <div class="card">
+                <label>Username Pembeli</label>
+                <input type="text" id="userInput" placeholder="reyz_store">
+                <label>Pilih Paket RAM</label>
+                <select id="pkgSelect"></select>
+                <button class="action-btn" id="btnCreate">🚀 Create Server Sekarang</button>
+            </div>
+        </div>
+
+        <div id="subdomain" class="tab-content">
+            <div class="card">
+                <label>Pilih Domain</label>
+                <select id="domSelect"></select>
+                <label>Hostname</label>
+                <input type="text" id="hostInput" placeholder="panel-reyz">
+                <label>IP VPS</label>
+                <input type="text" id="ipInput" placeholder="1.1.1.1">
+                <button class="action-btn" id="btnSubdo" style="background: #f38020; color: white;">🌐 Create Subdomain</button>
+            </div>
+        </div>
+
+        <div id="list-server" class="tab-content">
+            <button class="action-btn" id="btnList" style="background: #22c55e; color: white; margin-bottom: 20px; width: auto; padding: 10px 30px;">🔄 Refresh List</button>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead><tr><th>ID</th><th>Server Name</th><th>RAM</th><th>Disk</th></tr></thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="danger-zone" class="tab-content">
+            <div class="card" style="border-color: var(--danger);">
+                <label>ID Server / User untuk Dihapus</label>
+                <input type="number" id="idTarget" placeholder="Contoh: 12">
+                <button class="action-btn" id="btnDelServer" style="background: var(--danger); color: white;">🗑️ Hapus Server & User</button>
+            </div>
+        </div>
+
+        <div id="admin-manage" class="tab-content">
+            <div class="card">
+                <h3>Create New Admin</h3>
+                <label>Username Admin</label>
+                <input type="text" id="adminUsername" placeholder="admin_reyz">
+                <button class="action-btn" id="btnCreateAdmin" style="background: #eab308;">👑 Create Root Admin</button>
+                <hr style="margin: 30px 0; border: 0.5px solid #334155;">
+                <h3>Delete Admin</h3>
+                <label>ID Admin untuk Dihapus</label>
+                <input type="number" id="idAdminTarget" placeholder="Contoh: 5">
+                <button class="action-btn" id="btnDelAdmin" style="background: #7f1d1d; color: white;">❌ Hapus Akun Admin</button>
+            </div>
+        </div>
+
+        <div id="output-box">Silahkan pilih aksi di menu samping...</div>
+    </div>
+
+    <script src="settings/config.js"></script>
+    <script src="script.js"></script>
+    <script>
+        const sidebar = document.getElementById('sidebar');
+        const menuToggle = document.getElementById('menuToggle');
+        const overlay = document.getElementById('overlay');
+        menuToggle.onclick = () => { sidebar.classList.toggle('active'); overlay.classList.toggle('active'); };
+        overlay.onclick = () => { sidebar.classList.remove('active'); overlay.classList.remove('active'); };
+
+        function showTab(tabId, title) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.currentTarget.classList.add('active');
+            document.getElementById('current-tab-title').innerText = title;
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+        }
+        lucide.createIcons();
+    </script>
+</body>
+</html>
