@@ -342,7 +342,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     } catch (error) {
         showError('Gagal mengambil data login: ' + error.message);
     } finally {
-        loginBtn.disabled = false;
+        loginBtn.disabled = true;
         loginText.textContent = 'Login';
     }
 });
