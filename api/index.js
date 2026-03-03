@@ -58,11 +58,19 @@ async function sendTelegramMessage(chatId, message) {
   }
 }
 
-// Authentication endpoint
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
+
+  // Cek admin utama
   if (username === 'rey' && password === 'dev') {
-    res.json({ success: true, user: { username: 'ReyCloud', role: 'Admin' } });
+    return res.json({ success: true, user: { username: 'ReyCloud', role: 'Admin' } });
+  }
+
+  // Cek user yang ada di array (termasuk yang baru dibuat jika server belum restart)
+  const foundUser = users.find(u => u.username === username && u.password === password);
+  
+  if (foundUser) {
+    res.json({ success: true, user: { username: foundUser.username, role: 'User' } });
   } else {
     res.status(401).json({ error: 'Invalid credentials' });
   }
