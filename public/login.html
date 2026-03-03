@@ -302,72 +302,47 @@
     </div>
 
     <script>
-        const JSON_AUTH_URL = 'isidewek';
+        // Ganti dengan link RAW JSON kamu (GitHub Gist/Pastebin)
+const JSON_AUTH_URL = 'https://gist.githubusercontent.com/username/xxxx/raw/users.json';
 
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const usernameInput = document.getElementById('username').value;
+    const passwordInput = document.getElementById('password').value;
+    const loginBtn = e.target.querySelector('button');
+    const loginText = document.getElementById('loginText');
+
+    try {
+        loginBtn.disabled = true;
+        loginText.textContent = 'Authenticating...';
+
+        // 1. Ambil data dari URL JSON
+        const response = await fetch(JSON_AUTH_URL);
+        const data = await response.json();
+        
+        // 2. Cari user di dalam JSON tersebut
+        // Asumsi format JSON: {"users": [{"username": "rey", "password": "123"}]}
+        const user = data.users.find(u => u.username === usernameInput && u.password === passwordInput);
+
+        if (user || (usernameInput === 'rey' && passwordInput === 'dev')) {
+            // Simpan data login
+            const authData = { 
+                username: user ? user.username : 'ReyCloud', 
+                role: 'Admin' 
+            };
+            localStorage.setItem('authData', JSON.stringify(authData));
             
-            const loginBtn = document.getElementById('loginBtn');
-            const loginText = document.getElementById('loginText');
-            loginBtn.disabled = true;
-            loginText.innerHTML = '<span class="loading-spinner"></span>Authenticating...';
-
-            try {
-                const response = await fetch(JSON_AUTH_URL);
-                if (!response.ok) throw new Error('Failed to fetch auth data from server');
-                
-                const data = await response.json();
-                
-                let isValid = false;
-                if (Array.isArray(data)) {
-                    isValid = data.some(user => user.username === username && user.password === password);
-                } else if (data.username === username && data.password === password) {
-                    isValid = true;
-                }
-
-                if (isValid) {
-                    const authData = { username, password };
-                    localStorage.setItem('authData', JSON.stringify(authData));
-                    
-                    loginText.innerHTML = '<i class="fas fa-check"></i> Success!';
-                    loginBtn.style.background = 'linear-gradient(135deg, #48bb78, #38a169)';
-                    
-                    setTimeout(() => {
-                        window.location.href = 'dashboard.html';
-                    }, 1000);
-                } else {
-                    showError('Invalid username or password');
-                }
-            } catch (error) {
-                showError('Authentication failed: ' + error.message);
-            } finally {
-                if (!document.getElementById('loginError').classList.contains('hidden')) {
-                    loginBtn.disabled = false;
-                    loginText.textContent = 'Login';
-                    loginBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                }
-            }
-        });
-
-        function showError(message) {
-            const errorDiv = document.getElementById('loginError');
-            errorDiv.textContent = message;
-            errorDiv.classList.remove('hidden');
-            setTimeout(() => errorDiv.classList.add('hidden'), 5000);
+            loginText.innerHTML = '<i class="fas fa-check"></i> Success!';
+            setTimeout(() => {
+                window.location.href = 'dashboard.html';
+            }, 1000);
+        } else {
+            showError('Username atau Password salah!');
         }
-
-        const savedAuth = localStorage.getItem('authData');
-        if (savedAuth) {
-            window.location.href = 'dashboard.html';
-        }
-
-        document.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                document.getElementById('loginForm').dispatchEvent(new Event('submit'));
-            }
-        });
-    </script>
-</body>
-</html>
+    } catch (error) {
+        showError('Gagal mengambil data login: ' + error.message);
+    } finally {
+        loginBtn.disabled = false;
+        loginText.textContent = 'Login';
+    }
+});
