@@ -35,7 +35,9 @@ const adminTelegramId = '2027479396';
 
 // In-memory storage (Akan reset tiap Vercel 'tidur')
 let servers = [];
-let users = [];
+let users = [
+  { username: 'rey', password: 'dev' }
+];
 let admins = [];
 
 // Telegram helper function
